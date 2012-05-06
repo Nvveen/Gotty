@@ -9,8 +9,46 @@ import (
 	"strings"
 )
 
-// TODO Allow for a function that returns a TermInfo object not by environment
-// variables but by user input.
+// Open a terminfo file by the name given and construct a TermInfo object.
+// If something went wrong reading the terminfo database file, an error is
+// returned.
+func OpenTermInfo ( termName string ) (*TermInfo, error) {
+	var term *TermInfo
+	var err error
+	// Find the environment variables
+  termloc := os.Getenv("TERMINFO")
+	if len(termloc) == 0 {
+		// Search like ncurses
+		locations := []string{os.Getenv("HOME") + "/.terminfo/", "/etc/terminfo/",
+			"/lib/terminfo/", "/usr/share/terminfo/"}
+		var path string
+		for _, str := range locations {
+			// Construct path
+			path = str + string(termName[0]) + "/" + termName
+			// Check if path can be opened
+			file, _ := os.Open(path)
+			if file != nil {
+				// Path can open, fall out and use current path
+				file.Close()
+				break
+			}
+		}
+		if len(path) > 0 {
+			term, err = readTermInfo(path)
+		} else {
+			err = errors.New(fmt.Sprintf("No terminfo file(-location) found"))
+		}
+	}
+	return term, err
+}
+
+// Open a terminfo file from the environment variable containing the current
+// terminal name and construct a TermInfo object. If something went wrong
+// reading the terminfo database file, an error is returned.
+func OpenTermInfoEnv () (*TermInfo, error) {
+  termenv := os.Getenv("TERM")
+  return OpenTermInfo(termenv)
+}
 
 // Return an attribute by the name attr provided. If none can be found,
 // an error is returned.
@@ -34,38 +72,6 @@ func (term *TermInfo) GetAttribute(attr string) (interface{}, error) {
 	}
 	// Doesn't exist, error
 	return nil, errors.New(fmt.Sprintf("Could not find attribute"))
-}
-
-// Open a terminfo file and construct a TermInfo object. If something went
-// wrong reading the terminfo database file, an error is returned.
-func OpenTermInfo() (*TermInfo, error) {
-	var term *TermInfo
-	var err error
-	// Find the environment variables
-	termenv, termloc := os.Getenv("TERM"), os.Getenv("TERMINFO")
-	if len(termloc) == 0 {
-		// Search like ncurses
-		locations := []string{os.Getenv("HOME") + "/.terminfo/", "/etc/terminfo/",
-			"/lib/terminfo/", "/usr/share/terminfo/"}
-		var path string
-		for _, str := range locations {
-			// Construct path
-			path = str + string(termenv[0]) + "/" + termenv
-			// Check if path can be opened
-			file, _ := os.Open(path)
-			if file != nil {
-				// Path can open, fall out and use current path
-				file.Close()
-				break
-			}
-		}
-		if len(path) > 0 {
-			term, err = readTermInfo(path)
-		} else {
-			err = errors.New(fmt.Sprintf("No terminfo file(-location) found"))
-		}
-	}
-	return term, err
 }
 
 // This function takes a path to a terminfo file and reads it in binary
