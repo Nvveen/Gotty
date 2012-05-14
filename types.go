@@ -7,3 +7,11 @@ type TermInfo struct {
 	// The various names of the TermInfo file.
 	Names []string
 }
+
+type stack []interface{}
+
+type parser struct {
+	st         stack
+	parameters []interface{}
+	dynamicVar map[byte]interface{}
+}

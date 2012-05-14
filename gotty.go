@@ -12,11 +12,11 @@ import (
 // Open a terminfo file by the name given and construct a TermInfo object.
 // If something went wrong reading the terminfo database file, an error is
 // returned.
-func OpenTermInfo ( termName string ) (*TermInfo, error) {
+func OpenTermInfo(termName string) (*TermInfo, error) {
 	var term *TermInfo
 	var err error
 	// Find the environment variables
-  termloc := os.Getenv("TERMINFO")
+	termloc := os.Getenv("TERMINFO")
 	if len(termloc) == 0 {
 		// Search like ncurses
 		locations := []string{os.Getenv("HOME") + "/.terminfo/", "/etc/terminfo/",
@@ -45,9 +45,9 @@ func OpenTermInfo ( termName string ) (*TermInfo, error) {
 // Open a terminfo file from the environment variable containing the current
 // terminal name and construct a TermInfo object. If something went wrong
 // reading the terminfo database file, an error is returned.
-func OpenTermInfoEnv () (*TermInfo, error) {
-  termenv := os.Getenv("TERM")
-  return OpenTermInfo(termenv)
+func OpenTermInfoEnv() (*TermInfo, error) {
+	termenv := os.Getenv("TERM")
+	return OpenTermInfo(termenv)
 }
 
 // Return an attribute by the name attr provided. If none can be found,
