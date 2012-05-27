@@ -1,6 +1,8 @@
 // Gotty is a Go-package for reading and parsing the terminfo database
 package gotty
 
+// TODO fix full-name attribute lookup
+
 import (
 	"encoding/binary"
 	"errors"
@@ -52,7 +54,7 @@ func OpenTermInfoEnv() (*TermInfo, error) {
 
 // Return an attribute by the name attr provided. If none can be found,
 // an error is returned.
-func (term *TermInfo) GetAttribute(attr string) (interface{}, error) {
+func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	var value interface{}
 	var ok bool
 	// Look inside bool
@@ -123,7 +125,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 	term.boolAttributes = make(map[string]bool)
 	for i, b := range byteArray {
 		if b == 1 {
-			term.boolAttributes[boolAttr[i]] = true
+      term.boolAttributes[boolAttr[i*2+1]] = true
 		}
 	}
 	// If the number of bytes read is not even, a byte for alignment is added
@@ -143,7 +145,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 	term.numAttributes = make(map[string]int16)
 	for i, n := range shArray {
 		if n != 0377 && n > -1 {
-			term.numAttributes[numAttr[i]] = n
+			term.numAttributes[numAttr[i*2+1]] = n
 		}
 	}
 
@@ -166,7 +168,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 			r := offset
 			for ; byteArray[r] != 0; r++ {
 			}
-			term.strAttributes[strAttr[i]] = string(byteArray[offset:r])
+			term.strAttributes[strAttr[i*2+1]] = string(byteArray[offset:r])
 		}
 	}
 	return &term, nil

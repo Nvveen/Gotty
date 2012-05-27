@@ -8,10 +8,12 @@ type TermInfo struct {
 	Names []string
 }
 
-type stack []interface{}
+
+type stacker interface{}
+type stack []stacker
 
 type parser struct {
 	st         stack
-	parameters []interface{}
-	dynamicVar map[byte]interface{}
+	parameters []stacker
+	dynamicVar map[byte]stacker
 }
