@@ -60,6 +60,14 @@ func (term *TermInfo) Parse(attr string, params ...interface{}) (string, error) 
 	return result, err
 }
 
+// Parses the attribute that is received with name attr and parameters params.
+// Only works on full name of a capability that is given, which it uses to
+// search for the termcap name.
+func (term *TermInfo) ParseName(attr string, params ...interface{}) (string, error) {
+  tc := GetTermcapName(attr)
+  return term.Parse(tc, params)
+}
+
 // Identify each token in a stack based manner and do the actual parsing.
 func (ps *parser) walk(attr string) (string, error) {
   // We use a buffer to get the modified string.
@@ -344,11 +352,7 @@ func (st *stack) pop() (stacker, error) {
 func init() {
   // Initialize the main regex.
 	expStr := strings.Join(exp[:], "|")
-	var err error
-	regex, err = regexp.Compile(expStr)
-	if err != nil {
-		fmt.Errorf("Error: %s", err)
-	}
+	regex, _ = regexp.Compile(expStr)
   // Initialize the static variables.
 	staticVar = make(map[byte]stacker, 26)
 }

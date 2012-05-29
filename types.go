@@ -8,8 +8,8 @@ type TermInfo struct {
 	Names []string
 }
 
-
-type stacker interface{}
+type stacker interface{
+}
 type stack []stacker
 
 type parser struct {

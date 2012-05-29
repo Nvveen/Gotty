@@ -1,7 +1,7 @@
 // Gotty is a Go-package for reading and parsing the terminfo database
 package gotty
 
-// TODO fix full-name attribute lookup
+// TODO add more concurrency to name lookup, look for more opportunities.
 
 import (
 	"encoding/binary"
@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+  "reflect"
 )
 
 // Open a terminfo file by the name given and construct a TermInfo object.
@@ -56,24 +57,62 @@ func OpenTermInfoEnv() (*TermInfo, error) {
 // an error is returned.
 func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	var value interface{}
-	var ok bool
-	// Look inside bool
-	value, ok = term.boolAttributes[attr]
-	if ok {
-		return value, nil
-	}
-	// Look inside numbers
-	value, ok = term.numAttributes[attr]
-	if ok {
-		return value, nil
-	}
-	// Look inside strings
-	value, ok = term.strAttributes[attr]
-	if ok {
-		return value, nil
-	}
-	// Doesn't exist, error
-	return nil, errors.New(fmt.Sprintf("Could not find attribute"))
+  // We need to keep track of the following function finding a name. If none
+  // are found, all three ok's (hence an array) are set to false (not found
+  // in the maps).
+  var oks [3]bool
+  // Easy access function to repeat searching.
+  f := func (ats interface{}, attr string) {
+    // Reflect and switch on what type of element the map holds so we can
+    // select which attribute string to take (and thus minimize code
+    // duplication.
+    t := reflect.TypeOf(ats)
+    switch t.Elem().Kind() {
+    case reflect.Bool:
+      value, oks[0] = ats.(map[string]bool)[attr]
+    case reflect.Int16:
+      value, oks[1] = ats.(map[string]int16)[attr]
+    case reflect.String:
+      value, oks[2] = ats.(map[string]string)[attr]
+    }
+  }
+  // TODO go-this
+  f(term.boolAttributes, attr)
+  f(term.numAttributes, attr)
+  f(term.strAttributes, attr)
+  // Everything failed
+  if !oks[0] && !oks[1] && !oks[2] {
+    return nil, fmt.Errorf("Error finding attribute")
+  }
+  return value, nil
+}
+
+// Return an attribute by the name attr provided. If none can be found,
+// an error is returned. A name is first converted to its termcap value.
+func (term *TermInfo) GetAttributeName(name string) (stacker, error) {
+  tc := GetTermcapName(name)
+  return term.GetAttribute(tc)
+}
+
+// A utility function that finds and returns the termcap equivalent of a 
+// variable name.
+func GetTermcapName(name string) (string) {
+  var tc string
+  // Easy access function to repeat actions on the 3 different arrays
+  // of names.
+  f := func(attrs []string) {
+    for i, s := range attrs {
+      if s == name {
+        tc = attrs[i+1]
+        return
+      }
+    }
+  }
+  // TODO go-this
+  f(boolAttr[:])
+  f(numAttr[:])
+  f(strAttr[:])
+  return tc
 }
 
 // This function takes a path to a terminfo file and reads it in binary
