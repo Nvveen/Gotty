@@ -8,8 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
-  "reflect"
 )
 
 // Open a terminfo file by the name given and construct a TermInfo object.
@@ -56,63 +56,77 @@ func OpenTermInfoEnv() (*TermInfo, error) {
 // Return an attribute by the name attr provided. If none can be found,
 // an error is returned.
 func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
-	var value interface{}
-  // We need to keep track of the following function finding a name. If none
-  // are found, all three ok's (hence an array) are set to false (not found
-  // in the maps).
-  var oks [3]bool
-  // Easy access function to repeat searching.
-  f := func (ats interface{}, attr string) {
-    // Reflect and switch on what type of element the map holds so we can
-    // select which attribute string to take (and thus minimize code
-    // duplication.
-    t := reflect.TypeOf(ats)
-    switch t.Elem().Kind() {
-    case reflect.Bool:
-      value, oks[0] = ats.(map[string]bool)[attr]
-    case reflect.Int16:
-      value, oks[1] = ats.(map[string]int16)[attr]
-    case reflect.String:
-      value, oks[2] = ats.(map[string]string)[attr]
-    }
-  }
-  // TODO go-this
-  f(term.boolAttributes, attr)
-  f(term.numAttributes, attr)
-  f(term.strAttributes, attr)
-  // Everything failed
-  if !oks[0] && !oks[1] && !oks[2] {
-    return nil, fmt.Errorf("Error finding attribute")
-  }
-  return value, nil
+	// Channel to store the main value in.
+	valueChan := make(chan interface{}, 1)
+	// Wait channel to block until goroutines are finished.
+	wait := make(chan int, 3)
+	// Keep track of variable being written.
+	written := false
+	// Function to put into goroutine.
+	f := func(ats interface{}) {
+		var value interface{}
+		var ok bool
+		// Switch on type of map to use and assign value to it.
+		switch reflect.TypeOf(ats).Elem().Kind() {
+		case reflect.Bool:
+			value, ok = ats.(map[string]bool)[attr]
+		case reflect.Int16:
+			value, ok = ats.(map[string]int16)[attr]
+		case reflect.String:
+			value, ok = ats.(map[string]string)[attr]
+		}
+		// If ok, a value is found, so we can write.
+		if ok {
+			// TODO maybe a valueChan isn't needed but a normal var will do.
+			valueChan <- value
+			written = true
+		}
+		// Add to channel as a counter for blocking.
+		wait <- 1
+	}
+	// Go for all 3 attribute lists.
+	go f(term.boolAttributes)
+	go f(term.numAttributes)
+	go f(term.strAttributes)
+	// Block until complete.
+	for i := 0; i < 3; i++ {
+		<-wait
+	}
+	// If a value has been written, return it.
+	if written {
+		value := <-valueChan
+		return value, nil
+	}
+	// Otherwise, error.
+	return nil, fmt.Errorf("Erorr finding attribute")
 }
 
 // Return an attribute by the name attr provided. If none can be found,
 // an error is returned. A name is first converted to its termcap value.
 func (term *TermInfo) GetAttributeName(name string) (stacker, error) {
-  tc := GetTermcapName(name)
-  return term.GetAttribute(tc)
+	tc := GetTermcapName(name)
+	return term.GetAttribute(tc)
 }
 
 // A utility function that finds and returns the termcap equivalent of a 
 // variable name.
-func GetTermcapName(name string) (string) {
-  var tc string
-  // Easy access function to repeat actions on the 3 different arrays
-  // of names.
-  f := func(attrs []string) {
-    for i, s := range attrs {
-      if s == name {
-        tc = attrs[i+1]
-        return
-      }
-    }
-  }
-  // TODO go-this
-  f(boolAttr[:])
-  f(numAttr[:])
-  f(strAttr[:])
-  return tc
+func GetTermcapName(name string) string {
+	var tc string
+	// Easy access function to repeat actions on the 3 different arrays
+	// of names.
+	f := func(attrs []string) {
+		for i, s := range attrs {
+			if s == name {
+				tc = attrs[i+1]
+				return
+			}
+		}
+	}
+	// TODO go-this
+	f(boolAttr[:])
+	f(numAttr[:])
+	f(strAttr[:])
+	return tc
 }
 
 // This function takes a path to a terminfo file and reads it in binary
@@ -164,7 +178,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 	term.boolAttributes = make(map[string]bool)
 	for i, b := range byteArray {
 		if b == 1 {
-      term.boolAttributes[boolAttr[i*2+1]] = true
+			term.boolAttributes[boolAttr[i*2+1]] = true
 		}
 	}
 	// If the number of bytes read is not even, a byte for alignment is added
