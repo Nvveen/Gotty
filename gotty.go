@@ -57,28 +57,27 @@ func OpenTermInfoEnv() (*TermInfo, error) {
 // an error is returned.
 func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	// Channel to store the main value in.
-	valueChan := make(chan interface{}, 1)
+  var value stacker
 	// Wait channel to block until goroutines are finished.
 	wait := make(chan int, 3)
 	// Keep track of variable being written.
 	written := false
 	// Function to put into goroutine.
 	f := func(ats interface{}) {
-		var value interface{}
 		var ok bool
+    var v stacker
 		// Switch on type of map to use and assign value to it.
 		switch reflect.TypeOf(ats).Elem().Kind() {
 		case reflect.Bool:
-			value, ok = ats.(map[string]bool)[attr]
+			v, ok = ats.(map[string]bool)[attr]
 		case reflect.Int16:
-			value, ok = ats.(map[string]int16)[attr]
+			v, ok = ats.(map[string]int16)[attr]
 		case reflect.String:
-			value, ok = ats.(map[string]string)[attr]
+			v, ok = ats.(map[string]string)[attr]
 		}
 		// If ok, a value is found, so we can write.
 		if ok {
-			// TODO maybe a valueChan isn't needed but a normal var will do.
-			valueChan <- value
+      value = v
 			written = true
 		}
 		// Add to channel as a counter for blocking.
@@ -94,7 +93,6 @@ func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	}
 	// If a value has been written, return it.
 	if written {
-		value := <-valueChan
 		return value, nil
 	}
 	// Otherwise, error.
