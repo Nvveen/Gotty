@@ -57,7 +57,7 @@ func OpenTermInfoEnv() (*TermInfo, error) {
 // an error is returned.
 func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	// Channel to store the main value in.
-  var value stacker
+	var value stacker
 	// Wait channel to block until goroutines are finished.
 	wait := make(chan int, 3)
 	// Keep track of variable being written.
@@ -65,7 +65,7 @@ func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	// Function to put into goroutine.
 	f := func(ats interface{}) {
 		var ok bool
-    var v stacker
+		var v stacker
 		// Switch on type of map to use and assign value to it.
 		switch reflect.TypeOf(ats).Elem().Kind() {
 		case reflect.Bool:
@@ -77,7 +77,7 @@ func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 		}
 		// If ok, a value is found, so we can write.
 		if ok {
-      value = v
+			value = v
 			written = true
 		}
 		// Add to channel as a counter for blocking.
@@ -109,21 +109,30 @@ func (term *TermInfo) GetAttributeName(name string) (stacker, error) {
 // A utility function that finds and returns the termcap equivalent of a 
 // variable name.
 func GetTermcapName(name string) string {
+	// Termcap name
 	var tc string
-	// Easy access function to repeat actions on the 3 different arrays
-	// of names.
+	// Blocking channel
+	wait := make(chan int)
+	// Function to put into a goroutine
 	f := func(attrs []string) {
+		// Find the string corresponding to the name
 		for i, s := range attrs {
 			if s == name {
 				tc = attrs[i+1]
-				return
 			}
 		}
+		// Finished the function, so add to block list
+		wait <- 1
 	}
-	// TODO go-this
-	f(boolAttr[:])
-	f(numAttr[:])
-	f(strAttr[:])
+	// Go for all 3 attribute lists
+	go f(boolAttr[:])
+	go f(numAttr[:])
+	go f(strAttr[:])
+	// Block until all goroutines are done
+	for i := 0; i < 3; i++ {
+		<-wait
+	}
+	// Return the termcap name
 	return tc
 }
 
