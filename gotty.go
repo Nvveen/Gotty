@@ -1,3 +1,7 @@
+// Copyright 2012 Neal van Veen. All rights reserved.
+// Usage of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 // Gotty is a Go-package for reading and parsing the terminfo database
 package gotty
 
@@ -125,9 +129,9 @@ func GetTermcapName(name string) string {
 		wait <- 1
 	}
 	// Go for all 3 attribute lists
-	go f(boolAttr[:])
-	go f(numAttr[:])
-	go f(strAttr[:])
+	go f(BoolAttr[:])
+	go f(NumAttr[:])
+	go f(StrAttr[:])
 	// Block until all goroutines are done
 	for i := 0; i < 3; i++ {
 		<-wait
@@ -185,7 +189,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 	term.boolAttributes = make(map[string]bool)
 	for i, b := range byteArray {
 		if b == 1 {
-			term.boolAttributes[boolAttr[i*2+1]] = true
+			term.boolAttributes[BoolAttr[i*2+1]] = true
 		}
 	}
 	// If the number of bytes read is not even, a byte for alignment is added
@@ -205,7 +209,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 	term.numAttributes = make(map[string]int16)
 	for i, n := range shArray {
 		if n != 0377 && n > -1 {
-			term.numAttributes[numAttr[i*2+1]] = n
+			term.numAttributes[NumAttr[i*2+1]] = n
 		}
 	}
 
@@ -228,7 +232,7 @@ func readTermInfo(path string) (*TermInfo, error) {
 			r := offset
 			for ; byteArray[r] != 0; r++ {
 			}
-			term.strAttributes[strAttr[i*2+1]] = string(byteArray[offset:r])
+			term.strAttributes[StrAttr[i*2+1]] = string(byteArray[offset:r])
 		}
 	}
 	return &term, nil

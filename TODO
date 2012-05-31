@@ -1,0 +1,2 @@
+gotty.go:// TODO add more concurrency to name lookup, look for more opportunities.
+all:// TODO add more documentation, with function usage in a doc.go file.

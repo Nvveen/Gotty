@@ -1,3 +1,7 @@
+// Copyright 2012 Neal van Veen. All rights reserved.
+// Usage of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package gotty
 
 type TermInfo struct {

@@ -1,6 +1,11 @@
+// Copyright 2012 Neal van Veen. All rights reserved.
+// Usage of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package gotty
 
-var boolAttr = [...]string{
+// Boolean capabilities
+var BoolAttr = [...]string{
 	"auto_left_margin", "bw",
 	"auto_right_margin", "am",
 	"no_esc_ctlc", "xsb",
@@ -47,7 +52,8 @@ var boolAttr = [...]string{
 	"return_does_clr_eol", "",
 }
 
-var numAttr = [...]string{
+// Numerical capabilities
+var NumAttr = [...]string{
 	"columns", "cols",
 	"init_tabs", "it",
 	"lines", "lines",
@@ -89,7 +95,8 @@ var numAttr = [...]string{
 	"number_of_function_keys", "",
 }
 
-var strAttr = [...]string{
+// String capabilities
+var StrAttr = [...]string{
 	"back_tab", "cbt",
 	"bell", "bel",
 	"carriage_return", "cr",
