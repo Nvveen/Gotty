@@ -14,6 +14,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 // Open a terminfo file by the name given and construct a TermInfo object.
@@ -62,8 +63,8 @@ func OpenTermInfoEnv() (*TermInfo, error) {
 func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 	// Channel to store the main value in.
 	var value stacker
-	// Wait channel to block until goroutines are finished.
-	wait := make(chan int, 3)
+	// Add a blocking WaitGroup
+	var block sync.WaitGroup
 	// Keep track of variable being written.
 	written := false
 	// Function to put into goroutine.
@@ -84,17 +85,16 @@ func (term *TermInfo) GetAttribute(attr string) (stacker, error) {
 			value = v
 			written = true
 		}
-		// Add to channel as a counter for blocking.
-		wait <- 1
+		// Goroutine is done
+		block.Done()
 	}
+	block.Add(3)
 	// Go for all 3 attribute lists.
 	go f(term.boolAttributes)
 	go f(term.numAttributes)
 	go f(term.strAttributes)
-	// Block until complete.
-	for i := 0; i < 3; i++ {
-		<-wait
-	}
+	// Wait until every goroutine is done.
+	block.Wait()
 	// If a value has been written, return it.
 	if written {
 		return value, nil
@@ -115,8 +115,8 @@ func (term *TermInfo) GetAttributeName(name string) (stacker, error) {
 func GetTermcapName(name string) string {
 	// Termcap name
 	var tc string
-	// Blocking channel
-	wait := make(chan int)
+	// Blocking group
+	var wait sync.WaitGroup
 	// Function to put into a goroutine
 	f := func(attrs []string) {
 		// Find the string corresponding to the name
@@ -125,17 +125,16 @@ func GetTermcapName(name string) string {
 				tc = attrs[i+1]
 			}
 		}
-		// Finished the function, so add to block list
-		wait <- 1
+		// Goroutine is finished
+		wait.Done()
 	}
+	wait.Add(3)
 	// Go for all 3 attribute lists
 	go f(BoolAttr[:])
 	go f(NumAttr[:])
 	go f(StrAttr[:])
-	// Block until all goroutines are done
-	for i := 0; i < 3; i++ {
-		<-wait
-	}
+	// Wait until every goroutine is done
+	wait.Wait()
 	// Return the termcap name
 	return tc
 }
