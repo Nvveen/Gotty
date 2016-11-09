@@ -192,7 +192,9 @@ func readTermInfo(path string) (*TermInfo, error) {
 		}
 	}
 	// If the number of bytes read is not even, a byte for alignment is added
-	if len(byteArray)%2 != 0 {
+	// We know the header is an even number of bytes so only need to check the
+	// total of the names and booleans.
+	if (header[1]+header[2])%2 != 0 {
 		err = binary.Read(file, binary.LittleEndian, make([]byte, 1))
 		if err != nil {
 			return nil, err
