@@ -8,6 +8,7 @@ package gotty
 // TODO add more concurrency to name lookup, look for more opportunities.
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -230,9 +231,14 @@ func readTermInfo(path string) (*TermInfo, error) {
 	// We get an offset, and then iterate until the string is null-terminated
 	for i, offset := range shArray {
 		if offset > -1 {
-			r := offset
-			for ; byteArray[r] != 0; r++ {
+			if int(offset) >= len(byteArray) {
+				return nil, errors.New("array out of bounds reading string section")
 			}
+			r := bytes.IndexByte(byteArray[offset:], 0)
+			if r == -1 {
+				return nil, errors.New("missing nul byte reading string section")
+			}
+			r += int(offset)
 			term.strAttributes[StrAttr[i*2+1]] = string(byteArray[offset:r])
 		}
 	}
