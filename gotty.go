@@ -22,6 +22,9 @@ import (
 // If something went wrong reading the terminfo database file, an error is
 // returned.
 func OpenTermInfo(termName string) (*TermInfo, error) {
+	if len(termName) == 0 {
+		return nil, errors.New("No termname given")
+	}
 	// Find the environment variables
 	if termloc := os.Getenv("TERMINFO"); len(termloc) > 0 {
 		return readTermInfo(path.Join(termloc, string(termName[0]), termName))
