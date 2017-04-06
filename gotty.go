@@ -12,7 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"reflect"
 	"strings"
 	"sync"
@@ -24,21 +24,19 @@ import (
 func OpenTermInfo(termName string) (*TermInfo, error) {
 	// Find the environment variables
 	if termloc := os.Getenv("TERMINFO"); len(termloc) > 0 {
-		path := filepath.Join(termloc, string(termName[0]), termName)
-		return readTermInfo(path)
+		return readTermInfo(path.Join(termloc, string(termName[0]), termName))
 	} else {
 		// Search like ncurses
 		locations := []string{}
 		if h := os.Getenv("HOME"); len(h) > 0 {
-			locations = append(locations, filepath.Join(h, ".terminfo"))
+			locations = append(locations, path.Join(h, ".terminfo"))
 		}
 		locations = append(locations,
 			"/etc/terminfo/",
 			"/lib/terminfo/",
 			"/usr/share/terminfo/")
 		for _, str := range locations {
-			path := filepath.Join(str, string(termName[0]), termName)
-			term, err := readTermInfo(path)
+			term, err := readTermInfo(path.Join(str, string(termName[0]), termName))
 			if err == nil {
 				return term, nil
 			}
