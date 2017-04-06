@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -27,12 +28,16 @@ func OpenTermInfo(termName string) (*TermInfo, error) {
 	termloc := os.Getenv("TERMINFO")
 	if len(termloc) == 0 {
 		// Search like ncurses
-		locations := []string{os.Getenv("HOME") + "/.terminfo/", "/etc/terminfo/",
-			"/lib/terminfo/", "/usr/share/terminfo/"}
+		locations := []string{
+			filepath.Join(os.Getenv("HOME"), ".terminfo"),
+			"/etc/terminfo/",
+			"/lib/terminfo/",
+			"/usr/share/terminfo/",
+		}
 		var path string
 		for _, str := range locations {
 			// Construct path
-			path = str + string(termName[0]) + "/" + termName
+			path = filepath.Join(str, string(termName[0]), termName)
 			// Check if path can be opened
 			file, _ := os.Open(path)
 			if file != nil {
