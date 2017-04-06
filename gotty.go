@@ -22,11 +22,11 @@ import (
 // If something went wrong reading the terminfo database file, an error is
 // returned.
 func OpenTermInfo(termName string) (*TermInfo, error) {
-	var term *TermInfo
-	var err error
 	// Find the environment variables
-	termloc := os.Getenv("TERMINFO")
-	if len(termloc) == 0 {
+	if termloc := os.Getenv("TERMINFO"); len(termloc) > 0 {
+		path := filepath.Join(termloc, string(termName[0]), termName)
+		return readTermInfo(path)
+	} else {
 		// Search like ncurses
 		locations := []string{}
 		if h := os.Getenv("HOME"); len(h) > 0 {
@@ -38,14 +38,13 @@ func OpenTermInfo(termName string) (*TermInfo, error) {
 			"/usr/share/terminfo/")
 		for _, str := range locations {
 			path := filepath.Join(str, string(termName[0]), termName)
-			term, err = readTermInfo(path)
+			term, err := readTermInfo(path)
 			if err == nil {
 				return term, nil
 			}
 		}
 		return nil, errors.New("No terminfo file(-location) found")
 	}
-	return term, err
 }
 
 // Open a terminfo file from the environment variable containing the current
