@@ -34,23 +34,14 @@ func OpenTermInfo(termName string) (*TermInfo, error) {
 			"/lib/terminfo/",
 			"/usr/share/terminfo/",
 		}
-		var path string
 		for _, str := range locations {
-			// Construct path
-			path = filepath.Join(str, string(termName[0]), termName)
-			// Check if path can be opened
-			file, _ := os.Open(path)
-			if file != nil {
-				// Path can open, fall out and use current path
-				file.Close()
-				break
+			path := filepath.Join(str, string(termName[0]), termName)
+			term, err = readTermInfo(path)
+			if err == nil {
+				return term, nil
 			}
 		}
-		if len(path) > 0 {
-			term, err = readTermInfo(path)
-		} else {
-			err = errors.New(fmt.Sprintf("No terminfo file(-location) found"))
-		}
+		return nil, errors.New("No terminfo file(-location) found")
 	}
 	return term, err
 }
